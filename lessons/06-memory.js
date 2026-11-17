@@ -1,4 +1,5 @@
 LESSONS.push({
+  part: 'Beyond one run',
   id: 'memory',
   title: 'Memory: continue the conversation',
   summary: 'A checkpointer and a thread_id on the left, a history list you carry yourself on the right.',

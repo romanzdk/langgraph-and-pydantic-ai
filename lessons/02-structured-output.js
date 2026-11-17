@@ -1,4 +1,5 @@
 LESSONS.push({
+  part: 'Build the pipeline',
   id: 'structured-output',
   title: 'Structured output: get a Ticket, not text',
   summary: 'Ask the LLM for a Pydantic model instead of free text, and why one default broke with Claude.',

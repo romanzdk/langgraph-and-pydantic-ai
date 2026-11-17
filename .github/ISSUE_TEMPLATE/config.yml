@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Open the course
+    url: https://romanzdk.github.io/langgraph-and-pydantic-ai/
+    about: The course itself. Each lesson's address is handy to paste into an issue.
