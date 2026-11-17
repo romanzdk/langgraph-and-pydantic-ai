@@ -141,7 +141,9 @@ h3 { font-size: 1.1rem; margin: 2em 0 0.4em; }
   border-right: 1px solid var(--border);
   font-size: 0.94rem;
 }
-#nav ol { list-style: none; margin: 8px 0; padding: 0; }
+#nav ol { list-style: none; margin: 4px 0 8px; padding: 0; }
+#nav .part, .cards-part { margin: 18px 10px 0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.cards-part { margin: 26px 0 0; }
 #nav a { display: flex; gap: 8px; padding: 6px 10px; border-radius: 8px; color: var(--text); text-decoration: none; }
 #nav a:hover { background: var(--surface-2); }
 #nav a.on { background: var(--surface-2); font-weight: 600; }
@@ -250,7 +252,7 @@ pre.code code { background: none; padding: 0; font-size: inherit; display: block
 @media (max-width: 900px) {
   body { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'top' 'main' 'foot'; }
   #menu { display: inline-block; }
-  #nav { display: none; position: fixed; inset: 53px 0 0 0; max-height: none; background: var(--bg); z-index: 9; border-right: none; }
+  #nav { display: none; position: fixed; inset: 53px 0 0 0; align-self: stretch; max-height: none; background: var(--bg); z-index: 9; border-right: none; }
   body.nav-open #nav { display: block; }
   main { padding: 20px 16px 48px; }
   .site-foot { padding: 16px; }

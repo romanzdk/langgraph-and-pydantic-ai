@@ -1,4 +1,5 @@
 LESSONS.push({
+  part: 'Ship it',
   id: 'testing',
   title: 'Testing without an API key',
   summary: 'Run every pipeline with fake models: a fake LangChain chat model on the left, FunctionModel and override on the right.',

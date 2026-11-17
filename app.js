@@ -268,14 +268,26 @@ function lessonDone(lesson) {
   return lesson.quiz?.length && lesson.quiz.every((_, i) => done[i]);
 }
 
+// A lesson with a `part` starts a new group; the lessons after it belong to it until the next part.
+function byPart(item, list, heading) {
+  const groups = [];
+  LESSONS.forEach((l, i) => {
+    if (l.part || !groups.length) groups.push({ part: l.part, items: [] });
+    groups.at(-1).items.push(item(l, i));
+  });
+  const tag = list.split(' ')[0];
+  return groups
+    .map((g) => `${g.part ? `<p class="${heading}">${g.part}</p>` : ''}<${list}>${g.items.join('')}</${tag}>`)
+    .join('');
+}
+
 function renderNav() {
   const current = location.hash.replace(/^#\//, '');
   $nav.innerHTML = `
     <a href="#/" class="${current === '' ? 'on' : ''}">Start here</a>
-    <ol>${LESSONS.map(
-      (l, i) =>
-        `<li><a href="#/${l.id}" class="${current === l.id ? 'on' : ''}"><span class="num">${i + 1}</span>${l.title}${lessonDone(l) ? ' <span class="tick" title="All questions answered">✓</span>' : ''}</a></li>`,
-    ).join('')}</ol>
+    ${byPart((l, i) =>
+      `<li><a href="#/${l.id}" class="${current === l.id ? 'on' : ''}"><span class="num">${i + 1}</span>${l.title}${lessonDone(l) ? ' <span class="tick" title="All questions answered">✓</span>' : ''}</a></li>`,
+    'ol', 'part')}
     <a href="#/cheatsheet" class="${current === 'cheatsheet' ? 'on' : ''}">Cheat sheet</a>`;
 }
 
@@ -302,9 +314,11 @@ function renderHome() {
       <p>Every code snippet is copied from the runnable examples in the
       <a href="https://github.com/romanzdk/langgraph-and-pydantic-ai/tree/main/examples">examples folder</a>, and CI checks that they still match and still run.</p>
       <h2>Lessons</h2>
-      <ol class="cards">${LESSONS.map(
+      ${byPart(
         (l, i) => `<li><a href="#/${l.id}"><span class="num">${i + 1}</span><span><b>${l.title}</b><br><span class="sum">${l.summary}</span></span></a></li>`,
-      ).join('')}</ol>
+        'ol class="cards"',
+        'cards-part',
+      )}
     </div>`;
 }
 

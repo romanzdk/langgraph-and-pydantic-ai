@@ -1,4 +1,5 @@
 LESSONS.push({
+  part: 'Get started',
   id: 'setup',
   title: 'The task, the setup and the model',
   summary: 'What we build, what each library is for, and how both talk to a model through OpenRouter.',

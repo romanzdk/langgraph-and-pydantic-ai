@@ -1,6 +1,9 @@
 [project]
 name = "langgraph-and-pydantic-ai"
 version = "0.1.0"
+description = "Runnable examples for the course LangGraph & Pydantic AI, side by side."
+readme = "README.md"
+license = "MIT"
 requires-python = ">=3.13"
 dependencies = [
     "langchain>=1.5.0",
