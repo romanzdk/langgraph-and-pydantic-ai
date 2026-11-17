@@ -1,0 +1,10 @@
+[project]
+name = "langgraph-and-pydantic-ai"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "langchain>=1.5.0",
+    "langchain-openrouter>=0.2.9",
+    "langgraph>=1.2.22",
+    "pydantic-ai-slim[openrouter]>=2.69.0",
+]

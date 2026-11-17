@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LangGraph &amp; Pydantic AI, side by side</title>
+  <meta name="description" content="Learn LangGraph and Pydantic AI by building the same small LLM pipeline in both, side by side: structured output, branching, state, tools, memory and testing.">
+  <meta property="og:title" content="LangGraph & Pydantic AI, side by side">
+  <meta property="og:description" content="The same small LLM pipeline in LangGraph and Pydantic AI, side by side.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    try {
+      const t = localStorage.getItem('lgpa-theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <button id="menu" aria-label="Show lessons">☰</button>
+    <a href="#/" class="brand">LangGraph <span class="amp">&amp;</span> Pydantic AI</a>
+    <button id="theme" aria-label="Switch light or dark theme">◐</button>
+  </header>
+  <aside id="nav"></aside>
+  <main id="main"></main>
+  <footer class="site-foot">
+    <a href="https://github.com/romanzdk/langgraph-and-pydantic-ai" target="_blank" rel="noopener">Source and runnable examples on GitHub</a> ·
+    <a href="https://github.com/romanzdk/langgraph-and-pydantic-ai/issues/new" target="_blank" rel="noopener">Report a mistake</a> ·
+    MIT license
+  </footer>
+
+  <!-- Lessons appear in this order. scripts/check.mjs reads this list too. -->
+  <script src="lib.js"></script>
+  <script src="traces.js"></script>
+  <script src="lessons/01-setup.js"></script>
+  <script src="lessons/02-structured-output.js"></script>
+  <script src="lessons/03-branching.js"></script>
+  <script src="lessons/04-state.js"></script>
+  <script src="lessons/05-tools.js"></script>
+  <script src="lessons/06-memory.js"></script>
+  <script src="lessons/07-combined.js"></script>
+  <script src="lessons/08-testing.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
