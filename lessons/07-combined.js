@@ -63,8 +63,11 @@ LESSONS.push({
   ],
   differ: `
     <p><b>Where the loop lives.</b> In the LangGraph-only version you can see every tool round in the state. Here the
-    graph only sees "draft_reply ran". If you need a step between the model and the tool (log it, check it, ask a
-    human), keep the loop in the graph. If not, the agent version is shorter.</p>
+    graph only sees "draft_reply ran". Needing a check between the model and the tool is not by itself a reason
+    for the graph: Pydantic AI can ask a person to approve a tool call too (lesson 9). Keep the loop in the graph
+    when you want to control the flow yourself (your own nodes and edges around each tool round) and want a
+    checkpoint after every round, so a crash or a pause resumes from there. If not, the agent version is
+    shorter.</p>
     <p><b>Two kinds of messages.</b> LangChain messages and Pydantic AI messages are different classes. Pick one
     library for the LLM calls, and keep its messages in the state.</p>`,
   stepper: {

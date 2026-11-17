@@ -71,6 +71,19 @@ for (const lesson of ctx.LESSONS) {
   }
 }
 
+// A run that does not continue a conversation must start from its input alone. Otherwise a
+// thread_id reused between traces leaks an old conversation into the stepper.
+for (const [name, runs] of Object.entries(ctx.TRACES)) {
+  runs.forEach((run, i) => {
+    if (run.continues) return;
+    const state = run.steps[0].state;
+    const extra = Object.keys(state).filter((k) => !['messages', 'text'].includes(k));
+    if (extra.length || (state.messages || []).length > 1) {
+      errors.push(`traces.js ${name} run ${i + 1}: a new conversation starts with old state (${extra.join(', ') || `${state.messages.length} messages`})`);
+    }
+  });
+}
+
 if (errors.length) {
   console.error(errors.join('\n\n'));
   console.error(`\n${errors.length} problem(s)`);

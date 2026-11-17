@@ -73,8 +73,10 @@ LESSONS.push({
   ],
   differ: `
     <p><b>Tests vs. evals.</b> The offline check (lesson 8) runs in CI on every push, is fast and free, and must
-    always pass. Evals call the real model, cost money, and give a score, not a pass/fail. Run them when you change
-    the prompt, the model or the schema, and compare the score with the last run.</p>
+    always pass. Evals call the real model, cost money, and give a score per case. Run them when you change
+    the prompt, the model or the schema, and compare the score with the last run. A score can still gate a
+    release ("ship only at 95% or more"), and some checks need zero failures, for example "never refunds without
+    approval" or "never leaks another customer's order".</p>
     <p><b>Read the score honestly.</b> Both classifiers (Claude Haiku 5.5) got 12 of 12 checks right. That says
     these six tickets are easy, not that the classifier is perfect. A useful dataset grows from real tickets the
     model got wrong. With the fake models from lesson 8, which always answer "question, not urgent", the same

@@ -195,21 +195,9 @@ window.TRACES = {
       "messages": [
        {
         "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
-       {
-        "role": "human",
         "text": "Where is my order 123?"
        }
-      ],
-      "ticket": {
-       "category": "bug",
-       "urgent": true
-      }
+      ]
      }
     },
     {
@@ -219,14 +207,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -245,14 +225,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -278,14 +250,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -315,14 +279,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -362,14 +318,6 @@ window.TRACES = {
       "messages": [
        {
         "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
-       {
-        "role": "human",
         "text": "Where is my order 123?"
        },
        {
@@ -407,14 +355,6 @@ window.TRACES = {
       "messages": [
        {
         "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
-       {
-        "role": "human",
         "text": "Where is my order 123?"
        },
        {
@@ -450,14 +390,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -502,14 +434,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -558,14 +482,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
@@ -624,14 +540,6 @@ window.TRACES = {
       "messages": [
        {
         "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
-       {
-        "role": "human",
         "text": "Where is my order 123?"
        },
        {
@@ -688,14 +596,6 @@ window.TRACES = {
       "messages": [
        {
         "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
-       {
-        "role": "human",
         "text": "Where is my order 123?"
        },
        {
@@ -750,14 +650,6 @@ window.TRACES = {
      ],
      "state": {
       "messages": [
-       {
-        "role": "human",
-        "text": "Production is down, nobody can log in!"
-       },
-       {
-        "role": "ai",
-        "text": "Sent to on-call engineer (bug)."
-       },
        {
         "role": "human",
         "text": "Where is my order 123?"
