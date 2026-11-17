@@ -7,4 +7,5 @@ dependencies = [
     "langchain-openrouter>=0.2.9",
     "langgraph>=1.2.22",
     "pydantic-ai-slim[openrouter]>=2.69.0",
+    "pydantic-evals>=2.69.0",
 ]

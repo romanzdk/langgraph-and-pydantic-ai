@@ -40,6 +40,12 @@ for (const lesson of ctx.LESSONS) {
         }
       }
     }
+    // A line shows the note of the last link that marks it, so every link needs a line of its own.
+    const owner = kinds.map(() => ({}));
+    (ex.links || []).forEach((link, li) => kinds.forEach((_, pi) => link[pi] && (owner[pi][link[pi]] = li)));
+    (ex.links || []).forEach((link, li) => {
+      if (!kinds.some((_, pi) => owner[pi][link[pi]] === li)) errors.push(where(`example "${ex.title}": link ${li + 1} is hidden by a later link on the same lines`));
+    });
     for (const link of ex.links || []) {
       if (link.length !== kinds.length + 1) errors.push(where(`example "${ex.title}": link ${JSON.stringify(link)} needs ${kinds.length} line numbers and a note`));
       kinds.forEach((k, pi) => {

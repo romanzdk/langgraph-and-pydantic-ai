@@ -17,10 +17,12 @@ sys.path.insert(0, str(ROOT / "examples"))
 os.environ.setdefault("OPENROUTER_API_KEY", "fake")
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage  # noqa: E402
+from langgraph.types import Command  # noqa: E402
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart  # noqa: E402
 from pydantic_ai.models.function import AgentInfo, FunctionModel  # noqa: E402
 
 import combined_pipeline as cb  # noqa: E402
+import hitl_langgraph as hl  # noqa: E402
 import langgraph_pipeline as lg  # noqa: E402
 from check_offline import FakeLLM  # noqa: E402
 
@@ -62,15 +64,43 @@ def record(graph, make_input, questions: list[str], one_thread: bool) -> list[di
     for i, question in enumerate(questions):
         config = {"configurable": {"thread_id": "customer-1" if one_thread else f"customer-{i}"}}
         before_question(question)
-        steps, node, changed = [], "(input)", []
-        for mode, chunk in graph.stream(make_input(question), config, stream_mode=["updates", "values"]):
-            if mode == "updates":
-                [(node, update)] = chunk.items()
-                changed = sorted(update)
-            else:
-                steps.append({"node": node, "changed": changed, "state": {k: show(v) for k, v in chunk.items()}})
+        steps = stream_steps(graph, make_input(question), config)
         runs.append({"question": question, "continues": one_thread and i > 0, "steps": steps})
     return runs
+
+
+def stream_steps(graph, graph_input, config) -> list[dict]:
+    steps, node, changed, paused = [], "(input)", [], None
+    for mode, chunk in graph.stream(graph_input, config, stream_mode=["updates", "values"]):
+        if mode == "updates":
+            [(node, update)] = chunk.items()
+            if node == "__interrupt__":
+                node, changed, paused = "(paused)", [], update[0].value
+            else:
+                changed = sorted(update)
+        else:
+            step = {"node": node, "changed": changed, "state": {k: show(v) for k, v in chunk.items() if k != "__interrupt__"}}
+            if paused:
+                step["interrupt"] = paused
+            steps.append(step)
+    return steps
+
+
+def record_human_in_the_loop() -> list[dict]:
+    """One run until interrupt() pauses the graph, then a second run that resumes it."""
+    lg.llm = FakeLLM(
+        ticket=lg.Ticket(category="billing", urgent=False),
+        messages=iter([
+            AIMessage("", tool_calls=[{"name": "issue_refund", "args": {"order_id": "123"}, "id": "call_refund"}]),
+            AIMessage("Order 123 has been refunded. Sorry it arrived broken!"),
+        ]),
+    )
+    config = {"configurable": {"thread_id": "customer-1"}}
+    question = "Order 123 arrived broken. Please refund it."
+    return [
+        {"question": question, "continues": False, "steps": stream_steps(hl.graph, lg_input(question), config)},
+        {"question": "Command(resume=True)", "continues": True, "resume": True, "steps": stream_steps(hl.graph, Command(resume=True), config)},
+    ]
 
 
 def lg_messages():
@@ -102,6 +132,7 @@ lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=l
 traces["langgraph_single"] = record(lg.graph, lg_input, [QUESTIONS[0], QUESTIONS[2]], one_thread=False)
 lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=lg_messages())
 traces["langgraph"] = record(lg.graph, lg_input, QUESTIONS, one_thread=True)
+traces["hitl"] = record_human_in_the_loop()
 with cb.classifier.override(model=FunctionModel(fake_agent_model)), cb.writer.override(model=FunctionModel(fake_agent_model)):
     traces["combined"] = record(cb.graph, lambda q: {"text": q}, QUESTIONS, one_thread=True)
 

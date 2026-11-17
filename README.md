@@ -28,6 +28,9 @@ graph LR
 | 6 | [Memory](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/memory) | Checkpointer + `thread_id` vs. `message_history` |
 | 7 | [Both together](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/combined) | A LangGraph graph whose nodes call Pydantic AI agents |
 | 8 | [Testing without an API key](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/testing) | Fake chat models vs. `FunctionModel` and `Agent.override` |
+| 9 | [Human in the loop](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/human-in-the-loop) | `interrupt()` + `Command(resume=...)` vs. `requires_approval` + `DeferredToolResults` |
+| 10 | [Streaming](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/streaming) | `graph.stream` modes vs. `run_stream_sync` |
+| 11 | [Evals](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/evals) | One `pydantic_evals` dataset that scores both classifiers |
 
 Each lesson has side-by-side code with linked lines, a "where they differ" box, a **state stepper** that replays a
 real run of the graph node by node, a few questions, and a cheat card.
@@ -40,9 +43,12 @@ export OPENROUTER_API_KEY=...
 uv run examples/langgraph_pipeline.py
 uv run examples/pydantic_ai_pipeline.py
 uv run examples/combined_pipeline.py
+uv run examples/hitl_langgraph.py         # asks you to approve a refund
+uv run examples/streaming_pydantic_ai.py
+uv run examples/evals.py
 ```
 
-Without an API key (fake models, checks both branches, the tool and the memory):
+Without an API key (fake models, checks every example):
 
 ```bash
 cd examples && uv run check_offline.py
@@ -52,7 +58,7 @@ cd examples && uv run check_offline.py
 
 | Check | What it guarantees |
 |---|---|
-| `examples/check_offline.py` | All three pipelines take both branches, use the tool and remember the conversation |
+| `examples/check_offline.py` | Every example works: both branches, the tool, memory, approve and reject a refund, streaming, evals |
 | `scripts/trace.py` + `git diff` | The stepper data is a real run of the current graphs |
 | `scripts/check.mjs` | Every snippet in a lesson is copied word for word from `examples/`, line links and quiz answers are valid |
 

@@ -59,7 +59,7 @@ function codeBlock(src, kind, marks = {}) {
   const lines = src.split('\n').map((line, i) => {
     const n = i + 1;
     const mark = marks[n];
-    const attrs = mark ? ` class="line marked" data-link="${mark}" tabindex="0"` : ' class="line"';
+    const attrs = mark !== undefined ? ` class="line marked" data-link="${mark}" tabindex="0"` : ' class="line"';
     return `<span${attrs}><span class="ln">${n}</span>${hl(line) || ' '}</span>`;
   });
   return `<pre class="code"><code>${lines.join('')}</code></pre>`;
@@ -117,6 +117,7 @@ const GRAPH_NODES = {
   langgraph: ['(input)', 'classify', 'escalate', 'draft_reply', 'tools'],
   langgraph_single: ['(input)', 'classify', 'escalate', 'draft_reply', 'tools'],
   combined: ['(input)', 'classify', 'escalate', 'draft_reply'],
+  hitl: ['(input)', 'draft_reply', 'tools', '(paused)'],
 };
 
 function renderValue(key, value) {
@@ -170,10 +171,14 @@ function wireStepper(root, lesson) {
       el.querySelector('.prev').disabled = step === 0;
       el.querySelector('.next').disabled = step === steps.length - 1;
       el.querySelector('.graph-strip').innerHTML = GRAPH_NODES[cfg.trace]
-        .map((n) => `<span class="gnode${n === s.node ? ' on' : ''}">${n === '(input)' ? 'input' : n}</span>`)
+        .map((n) => `<span class="gnode${n === s.node ? ' on' : ''}">${n.replace(/[()]/g, '')}</span>`)
         .join('');
       const what =
-        s.node === '(input)'
+        s.node === '(paused)'
+          ? `<b>Paused.</b> <code>interrupt()</code> inside the tool asked <b>${esc(s.interrupt)}</b>. <code>invoke</code> returns here and the checkpointer keeps the state. The tool did not finish, so nothing changed.`
+          : s.node === '(input)' && runs[run].resume
+          ? 'Start of the resumed run: the checkpointer loaded the saved state. <code>Command(resume=True)</code> becomes the return value of <code>interrupt()</code>, and the paused node runs again from its start.'
+          : s.node === '(input)'
           ? runs[run].continues
             ? 'Start of this run: the checkpointer loaded the saved state of the thread, and the new input was added.'
             : 'Start of this run: the input you passed to <code>invoke</code>.'
