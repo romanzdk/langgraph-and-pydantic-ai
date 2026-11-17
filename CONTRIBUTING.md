@@ -13,7 +13,9 @@ which example, stepper step or question. If you have it, include what you expect
 | Path | What it is |
 |---|---|
 | `examples/` | The runnable Python examples. **This is the source of truth**: every code snippet on the site is copied from here. |
+| `examples/shop.py` | The shop's own code (orders, refunds), plain Python used by the tools of both libraries. |
 | `examples/check_offline.py` | Runs every example with fake models, so no API key is needed. |
+| `exercises/` | Exercises to solve, their solutions, and `check.py`, which checks them with fake models. |
 | `scripts/trace.py` | Runs the real graphs with fake models and records the state after every step into `traces.js` (the stepper). |
 | `lessons/*.js` | One lesson per file, listed in `index.html` in the order they appear. |
 | `scripts/check.mjs` | Checks the lessons: snippets match `examples/`, line links, quiz answers, stepper traces. |
@@ -30,7 +32,8 @@ which example, stepper step or question. If you have it, include what you expect
    uv run examples/langgraph_pipeline.py
    ```
 
-2. If a graph changed, record the stepper again: `uv run scripts/trace.py`.
+2. If a graph changed, record the stepper again: `uv run scripts/trace.py`. If an exercise changed, run
+   `uv run exercises/check.py --solutions`.
 3. Edit the lesson in `lessons/`, then look at it in a browser: `python3 -m http.server 8000`.
 4. Run the lesson checks: `node scripts/check.mjs`.
 
@@ -63,8 +66,10 @@ LESSONS.push({
     out: code`...`,                  // optional output, shown under the code
   }],
   differ: `<p>HTML: where the two libraries really differ</p>`,
+  differTitle: '...',                // optional heading instead of "Where they differ"; examples are optional if differ is set
   stepper: { trace: 'langgraph_single', runs: [0], title: '...', text: '<p>HTML</p>' },  // optional, see traces.js
   quiz: [{ q: 'HTML', code: code`...`, options: ['...'], answer: 1, why: 'HTML' }],
+  exercises: [{ name: 'tool_limit', title: '...', text: '<p>HTML</p>' }],  // exercises/<name>.py and solutions/<name>.py
   cheat: [['LangGraph', 'Pydantic AI'], ...],
 });
 ```

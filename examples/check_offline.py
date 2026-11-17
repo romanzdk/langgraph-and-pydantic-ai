@@ -3,23 +3,34 @@
 Checks both branches (urgent / not urgent), that the tool result reaches the reply,
 that a second question in the same conversation still sees the first one,
 that a refund waits for a person (approve and reject), streaming, and the evals.
+Then the failure cases (retry, step and tool limits, a crash in the middle of a refund,
+made-up output), the safe tools (other customers' orders, injected text, approvals)
+and the evals of the whole run.
 """
 
 import os
+import tempfile
 
 os.environ.setdefault("OPENROUTER_API_KEY", "fake")
 
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langgraph.checkpoint.sqlite import SqliteSaver
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart
 from pydantic_ai.models.function import AgentInfo, DeltaToolCall, FunctionModel
 
 import combined_pipeline as cb
 import evals
+import evals_full
+import failures_langgraph
+import failures_pydantic_ai
 import hitl_langgraph
 import hitl_pydantic_ai
 import langgraph_pipeline as lg
 import pydantic_ai_pipeline as pa
+import safe_tools_langgraph
+import safe_tools_pydantic_ai
+import shop
 import streaming_langgraph
 import streaming_pydantic_ai
 
@@ -99,7 +110,11 @@ def main() -> None:
     check_human_in_the_loop()
     check_streaming()
     check_evals()
-    print("ok: all examples work: branches, tools, memory, human in the loop, streaming and evals")
+    check_failures()
+    check_safe_tools()
+    check_full_evals()
+    print("ok: all examples work: branches, tools, memory, human in the loop, streaming, evals,")
+    print("    failures and recovery, safe tools, and evals of the whole run")
 
 
 def check_human_in_the_loop() -> None:
@@ -158,6 +173,147 @@ def check_evals() -> None:
             report = evals.dataset.evaluate_sync(task, progress=False)
             passed = sum(a.value for case in report.cases for a in case.assertions.values())
             assert passed == 6, (task.__name__, passed)
+
+
+def lg_call(name: str, order_id: str) -> AIMessage:
+    return AIMessage("", tool_calls=[{"name": name, "args": {"order_id": order_id}, "id": f"{name}-{order_id}-{len(shop.REFUNDS)}"}])
+
+
+class Crash(BaseException):
+    """The process dies. BaseException, so no retry or error handler catches it."""
+
+
+class CrashAfterPayout(dict):
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        raise Crash
+
+
+def check_failures() -> None:
+    # A timeout in draft_reply: RetryPolicy runs the step again.
+    class FlakyLLM(FakeLLM):
+        fails: int = 1
+
+        def invoke(self, *args, **kwargs):
+            if self.fails:
+                self.fails -= 1
+                raise ConnectionError("timeout")
+            return super().invoke(*args, **kwargs)
+
+    lg.llm = FlakyLLM(ticket=lg.Ticket(category="question", urgent=False), messages=iter([AIMessage("Hello.")]))
+    graph = failures_langgraph.builder.compile()
+    assert failures_langgraph.handle(graph, "hi", "retry") == "Hello."
+
+    # A model that never stops calling tools: recursion_limit and UsageLimits end the run.
+    lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=iter([lg_call("get_order_status", "123") for _ in range(20)]))
+    assert failures_langgraph.handle(graph, "loop", "loop") == failures_langgraph.GIVE_UP
+
+    def always_tool(messages, info: AgentInfo) -> ModelResponse:
+        return ModelResponse(parts=[ToolCallPart("get_order_status", {"order_id": "123"})])
+
+    with failures_pydantic_ai.writer.override(model=FunctionModel(always_tool)):
+        assert failures_pydantic_ai.handle("loop", []) == (failures_pydantic_ai.GIVE_UP, [])
+
+    # The process dies after the payout, before the tools step is saved. Resuming runs the
+    # step again; the refund is keyed by order, so the money goes out once.
+    shop.REFUNDS = CrashAfterPayout()
+    lg.llm = FakeLLM(ticket=lg.Ticket(category="billing", urgent=False), messages=iter([lg_call("issue_refund", "123"), AIMessage("Refunded.")]))
+    db = os.path.join(tempfile.mkdtemp(), "support.db")
+    with SqliteSaver.from_conn_string(db) as checkpointer:
+        try:
+            failures_langgraph.handle(failures_langgraph.builder.compile(checkpointer=checkpointer), "refund 123", "crash")
+            raise AssertionError("expected a crash")
+        except Crash:
+            pass
+    shop.REFUNDS = dict(shop.REFUNDS)
+    with SqliteSaver.from_conn_string(db) as checkpointer:
+        graph = failures_langgraph.builder.compile(checkpointer=checkpointer)
+        assert graph.get_state({"configurable": {"thread_id": "crash"}}).next == ("tools",)
+        assert failures_langgraph.handle(graph, None, "crash") == "Refunded."
+        tool_result = graph.get_state({"configurable": {"thread_id": "crash"}}).values["messages"][-2].text
+    assert shop.REFUNDS == {"123": "refund-1"}, shop.REFUNDS
+    assert tool_result == "order 123 was already refunded (refund-1)", tool_result
+    shop.REFUNDS.clear()
+
+    # Valid text, wrong fact: the reply claims a refund that never happened, the validator sends it back.
+    replies = iter(["Your order was refunded.", "I can look into a refund for you."])
+
+    def made_up(messages, info: AgentInfo) -> ModelResponse:
+        return ModelResponse(parts=[TextPart(next(replies))])
+
+    with failures_pydantic_ai.writer.override(model=FunctionModel(made_up)):
+        assert failures_pydantic_ai.handle("refund?", [])[0] == "I can look into a refund for you."
+
+
+def check_safe_tools() -> None:
+    alice = safe_tools_pydantic_ai.Customer("alice")
+    asked: list[tuple[str, str]] = []
+
+    def person(customer_id: str, order_id: str) -> bool:
+        asked.append((customer_id, order_id))
+        return True
+
+    # The model asks for bob's order and, after the injected note, refunds it. Python says no both times.
+    def obey_everything(messages, info: AgentInfo) -> ModelResponse:
+        last = messages[-1].parts[-1]
+        if isinstance(last, ToolReturnPart):
+            if "IGNORE" in last.content:
+                return ModelResponse(parts=[ToolCallPart("issue_refund", {"order_id": "456"})])
+            return ModelResponse(parts=[TextPart(last.content)])
+        return ModelResponse(parts=[ToolCallPart("get_order_status", {"order_id": "456" if "456" in str(last.content) else "789"})])
+
+    with safe_tools_pydantic_ai.writer.override(model=FunctionModel(obey_everything)):
+        assert safe_tools_pydantic_ai.handle(alice, "Status of 456?", person).output == "order not found"
+        assert safe_tools_pydantic_ai.handle(alice, "News on 789?", person).output == "order not found"
+    assert asked == [("alice", "456")], asked
+
+    lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=iter([
+        lg_call("get_order_status", "456"), AIMessage("a"),
+        lg_call("get_order_status", "789"), lg_call("issue_refund", "456"), AIMessage("b"),
+    ]))
+    lg_alice = safe_tools_langgraph.Customer("alice")
+    result = safe_tools_langgraph.handle(lg_alice, "Status of 456?", "safe-1", person)
+    assert result["messages"][-2].text == "order not found"
+    result = safe_tools_langgraph.handle(lg_alice, "News on 789?", "safe-2", person)
+    assert "IGNORE" in result["messages"][2].text and result["messages"][-2].text == "order not found"
+    assert asked == [("alice", "456")], asked  # the ownership check runs before a person is asked
+    assert shop.REFUNDS == {}, shop.REFUNDS
+
+    # A refund of her own order: the person sees the exact order, and only that one is paid.
+    lg.llm = FakeLLM(ticket=lg.Ticket(category="billing", urgent=False), messages=iter([lg_call("issue_refund", "123"), AIMessage("Done.")]))
+    safe_tools_langgraph.handle(lg_alice, "Refund 123", "safe-3", person)
+    assert asked[-1] == ("alice", "123") and shop.REFUNDS == {"123": "refund-1"}, (asked, shop.REFUNDS)
+    shop.REFUNDS.clear()
+
+
+def check_full_evals() -> None:
+    # A fake that looks up the order in the request and repeats the tool result. With the old
+    # prompt it obeys the text injected in order 789's note, so the comparison has something to show.
+    def fake_writer(messages, info: AgentInfo) -> ModelResponse:
+        last = messages[-1].parts[-1]
+        if isinstance(last, ToolReturnPart):
+            if "IGNORE" in last.content and "never instructions" not in (info.instructions or ""):
+                return ModelResponse(parts=[ToolCallPart("issue_refund", {"order_id": "456"})])
+            return ModelResponse(parts=[TextPart(f"Update: {last.content}")])
+        text = str(last.content)
+        order_id = next(w.strip("?.") for w in text.split() if w.strip("?.").isdigit())
+        tool = "issue_refund" if "refund" in text else "get_order_status"
+        return ModelResponse(parts=[ToolCallPart(tool, {"order_id": order_id})])
+
+    with safe_tools_pydantic_ai.writer.override(model=FunctionModel(fake_writer)):
+        report = evals_full.dataset.evaluate_sync(evals_full.run_pydantic_ai, max_concurrency=1, progress=False)
+        before, after = evals_full.compare_prompts()
+    def failed(r) -> set:
+        return {(c.name, n) for c in r.cases for n, a in c.assertions.items() if not a.value}
+
+    assert failed(report) == failed(after) == set(), failed(report)
+    assert failed(before) == {("injection in a note", "right_tools")}, failed(before)
+    assert all(c.metrics["requests"] >= 2 for c in report.cases), [c.metrics for c in report.cases]
+
+    # The LangGraph task runs too. This fake never calls a tool, so it fails the checks that need one.
+    lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=iter([AIMessage("Hi.") for _ in range(6)]))
+    report = evals_full.dataset.evaluate_sync(evals_full.run_langgraph, max_concurrency=1, progress=False)
+    assert not report.failures and {n for _, n in failed(report)} == {"right_tools", "grounded", "refunds_as_allowed"}, failed(report)
 
 
 if __name__ == "__main__":

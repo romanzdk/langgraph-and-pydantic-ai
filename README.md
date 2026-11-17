@@ -4,14 +4,14 @@
 
 **Learn both libraries by building the same LLM pipeline in each, next to each other.**
 
-A free, interactive course: linked code side by side, a state stepper that replays real runs of the graph, quizzes
-and cheat cards. Nothing to install, no API key needed to read it.
+A free, interactive course: linked code side by side, a state stepper that replays real runs of the graph, quizzes,
+coding exercises and cheat cards. Nothing to install, no API key needed to read it.
 
 [![Open the course](https://img.shields.io/badge/Open_the_course-%E2%86%92-0f8a6c?style=for-the-badge)](https://romanzdk.github.io/langgraph-and-pydantic-ai/)
 
 [![check](https://github.com/romanzdk/langgraph-and-pydantic-ai/actions/workflows/check.yml/badge.svg)](https://github.com/romanzdk/langgraph-and-pydantic-ai/actions/workflows/check.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![11 lessons](https://img.shields.io/badge/lessons-11-0f8a6c)
+![15 lessons](https://img.shields.io/badge/lessons-15-0f8a6c)
 ![Python 3.13+](https://img.shields.io/badge/Python-3.13%2B-3776ab?logo=python&logoColor=white)
 ![LangGraph 1.2](https://img.shields.io/badge/LangGraph-1.2-0f8a6c)
 ![Pydantic AI 2.69](https://img.shields.io/badge/Pydantic_AI-2.69-b2347d)
@@ -38,7 +38,8 @@ graph LR
 ```
 
 Then it grows: memory across questions, both libraries in one graph, tests without an API key, a person approving
-refunds, streaming, and evals.
+refunds, streaming and evals. Then it goes wrong on purpose: timeouts, a tool loop that never ends, a crash in the
+middle of a refund, another customer's order, and a prompt injection hidden in a tool result.
 
 ## How a lesson works
 
@@ -48,6 +49,7 @@ refunds, streaming, and evals.
 | **Where they differ** | The places where the two libraries really think differently, and the mistakes we hit while building the examples. |
 | **Step through the state** | Replay a recorded run of the real graph, node by node, and see exactly which keys each node changed. |
 | **Check yourself** | A few short questions with explanations. |
+| **Exercise** | Some lessons end with a small change to make in [`exercises/`](exercises), checked by a test with fake models. |
 | **Cheat card** | A LangGraph ↔ Pydantic AI lookup table for the topic. The [cheat sheet](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/cheatsheet) puts every card on one searchable page. |
 
 <p align="center"><img src="docs/images/stepper.png" alt="The state stepper: a run of the graph paused on its first step, showing the messages loaded from the checkpoint." width="720"></p>
@@ -85,6 +87,20 @@ refunds, streaming, and evals.
 | 10 | [Streaming](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/streaming) | `graph.stream` modes vs. `run_stream_sync` |
 | 11 | [Evals](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/evals) | One `pydantic_evals` dataset that scores both classifiers |
 
+**When it goes wrong**
+
+| # | Lesson | What you learn |
+|---|---|---|
+| 12 | [When things fail](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/failures) | Retries, output validators, tool budgets, resuming from SQLite, refunds that are safe to run twice |
+| 13 | [Safe tools](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/safe-tools) | `ToolRuntime` context vs. `RunContext` deps, permission checks in Python, prompt injection |
+| 14 | [Evals of the whole run](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/full-evals) | Right tool, grounded replies, no leaks, no unapproved refunds; tokens, and a prompt comparison |
+
+**Wrap up**
+
+| # | Lesson | What you learn |
+|---|---|---|
+| 15 | [Which one should I use?](https://romanzdk.github.io/langgraph-and-pydantic-ai/#/which-one) | When plain Python is enough, when Pydantic AI, when LangGraph, when both |
+
 ## Run the examples
 
 Every snippet on the site comes from [`examples/`](examples). The models go through
@@ -102,6 +118,9 @@ uv run examples/combined_pipeline.py      # LangGraph graph, Pydantic AI agents
 uv run examples/hitl_langgraph.py         # asks you to approve a refund
 uv run examples/streaming_pydantic_ai.py  # the reply token by token
 uv run examples/evals.py                  # scores both classifiers
+uv run examples/failures_langgraph.py     # run it, kill it with Ctrl+C, run it again
+uv run examples/safe_tools_pydantic_ai.py # tries other customers' orders and an injection
+uv run examples/evals_full.py             # scores the whole run, then compares two prompts
 ```
 
 No API key? Run everything with fake models:
@@ -112,15 +131,31 @@ cd examples && uv run check_offline.py
 
 To use another model, change `anthropic/claude-haiku-5.5` to any [OpenRouter model ID](https://openrouter.ai/models).
 
+## Exercises
+
+Edit a file in [`exercises/`](exercises), then check it. The checks use fake models, so no API key is needed:
+
+```sh
+uv run exercises/check.py tool_limit        # lesson 12: stop a tool loop
+uv run exercises/check.py refund_once       # lesson 12: a refund that is safe to run twice
+uv run exercises/check.py own_orders_only   # lesson 13: take the customer from the app
+```
+
+Solutions are in [`exercises/solutions/`](exercises/solutions). Try first.
+
 ## Every example is checked
 
 A course is only useful if its examples are right, so CI checks everything on every push, and deploys the site only
 when all checks pass:
 
 - **Every example runs** with fake models ([`examples/check_offline.py`](examples/check_offline.py)): both branches,
-  the tool round, memory across questions, approving and rejecting a refund, streaming, and the evals.
+  the tool round, memory across questions, approving and rejecting a refund, streaming, the evals, a crash in the
+  middle of a refund, other customers' orders and injected instructions.
+- **Every exercise is solvable** ([`exercises/check.py`](exercises/check.py)): each solution passes its check, and
+  each unsolved exercise still fails it.
 - **The stepper is a real run.** [`scripts/trace.py`](scripts/trace.py) runs the real graphs and records the state
-  after every step. Only the reply texts are canned. CI fails if the recording is out of date.
+  after every step. Only the reply texts are canned. CI fails if the recording is out of date, or if a new
+  conversation starts with state left over from another one.
 - **Every snippet matches the code.** [`scripts/check.mjs`](scripts/check.mjs) fails if a snippet in a lesson is not
   found word for word in `examples/`, if a line link points at the wrong line or hides another one, or if a quiz
   answer is invalid.

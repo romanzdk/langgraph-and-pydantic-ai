@@ -118,6 +118,7 @@ const GRAPH_NODES = {
   langgraph_single: ['(input)', 'classify', 'escalate', 'draft_reply', 'tools'],
   combined: ['(input)', 'classify', 'escalate', 'draft_reply'],
   hitl: ['(input)', 'draft_reply', 'tools', '(paused)'],
+  crash: ['(input)', 'draft_reply', 'tools', '(crashed)'],
 };
 
 function renderValue(key, value) {
@@ -176,6 +177,10 @@ function wireStepper(root, lesson) {
       const what =
         s.node === '(paused)'
           ? `<b>Paused.</b> <code>interrupt()</code> inside the tool asked <b>${esc(s.interrupt)}</b>. <code>invoke</code> returns here and the checkpointer keeps the state. The tool did not finish, so nothing changed.`
+          : s.node === '(crashed)'
+          ? `<b>The process died</b> inside the <code>tools</code> step, right after the money went out (refunds: <code>${esc(JSON.stringify(s.paid))}</code>). The step never finished, so the checkpoint below still ends after <code>draft_reply</code>.`
+          : s.node === '(input)' && runs[run].restart
+          ? 'A new process opens the same SQLite file. <code>invoke(None, config)</code> adds no input: it loads the last checkpoint and runs the step that did not finish, <code>tools</code>, again.'
           : s.node === '(input)' && runs[run].resume
           ? 'Start of the resumed run: the checkpointer loaded the saved state. <code>Command(resume=True)</code> becomes the return value of <code>interrupt()</code>, and the paused node runs again from its start.'
           : s.node === '(input)'
@@ -255,6 +260,19 @@ function wireQuiz(root, lesson) {
   });
 }
 
+const REPO = 'https://github.com/romanzdk/langgraph-and-pydantic-ai/blob/main';
+
+function renderExercise(ex) {
+  return `
+    <section class="exercise">
+      <h2>Exercise: ${ex.title}</h2>
+      ${ex.text}
+      <div class="out"><div class="pane-label">Clone the repo, edit <span class="file">exercises/${ex.name}.py</span>, then run</div>${codeBlock(`$ uv run exercises/check.py ${ex.name}`, 'sh')}</div>
+      <p class="exercise-links"><a href="${REPO}/exercises/${ex.name}.py" target="_blank" rel="noopener">The exercise</a> ·
+      <a href="${REPO}/exercises/solutions/${ex.name}.py" target="_blank" rel="noopener">A solution</a> (try first)</p>
+    </section>`;
+}
+
 function cheatTable(rows) {
   return `<table class="cheat"><thead><tr><th>LangGraph</th><th>Pydantic AI</th></tr></thead><tbody>${rows
     .map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`)
@@ -301,7 +319,8 @@ function renderHome() {
       <div class="task">
         <b>The pipeline:</b> a support ticket comes in → an LLM classifies it (<code>category</code>, <code>urgent</code>)
         → urgent tickets go to the on-call engineer, the rest get a reply written by the LLM, which can look up an order
-        with a tool. Later, it also remembers the conversation.
+        with a tool. Later, it also remembers the conversation, and then things go wrong on purpose: timeouts, a crash
+        in the middle of a refund, and a customer who tries to see someone else's order.
       </div>
       <h2>How a lesson works</h2>
       <ul class="how">
@@ -309,7 +328,8 @@ function renderHome() {
         matching line on the other side and a short note.</li>
         <li><b>Where they differ.</b> The places where the two libraries really think differently.</li>
         <li><b>Step through the state.</b> Replay a real run of the graph, node by node, and see what each node changed.</li>
-        <li><b>Check yourself.</b> A few short questions. <b>Cheat card</b> at the end, all of them on the <a href="#/cheatsheet">cheat sheet</a>.</li>
+        <li><b>Check yourself.</b> A few short questions, and in some lessons a small exercise to solve in the code.
+        <b>Cheat card</b> at the end, all of them on the <a href="#/cheatsheet">cheat sheet</a>.</li>
       </ul>
       <p>Every code snippet is copied from the runnable examples in the
       <a href="https://github.com/romanzdk/langgraph-and-pydantic-ai/tree/main/examples">examples folder</a>, and CI checks that they still match and still run.</p>
@@ -355,10 +375,11 @@ function renderLesson(lesson) {
       <p class="kicker">Lesson ${i + 1} of ${LESSONS.length}</p>
       <h1>${lesson.title}</h1>
       <div class="intro">${lesson.intro}</div>
-      ${lesson.examples.map(renderExample).join('')}
-      ${lesson.differ ? `<aside class="differ"><h2>Where they differ</h2>${lesson.differ}</aside>` : ''}
+      ${(lesson.examples || []).map(renderExample).join('')}
+      ${lesson.differ ? `<aside class="differ"><h2>${lesson.differTitle || 'Where they differ'}</h2>${lesson.differ}</aside>` : ''}
       ${lesson.stepper ? renderStepper(lesson.stepper, 0) : ''}
       ${lesson.quiz ? renderQuiz(lesson.quiz, lesson.id) : ''}
+      ${(lesson.exercises || []).map(renderExercise).join('')}
       ${lesson.cheat ? `<section><h2>Cheat card</h2>${cheatTable(lesson.cheat)}</section>` : ''}
       <nav class="pager">
         ${prev ? `<a href="#/${prev.id}">← ${prev.title}</a>` : '<span></span>'}
