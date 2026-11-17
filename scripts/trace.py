@@ -62,7 +62,7 @@ def record(graph, make_input, questions: list[str], one_thread: bool) -> list[di
     """
     runs = []
     for i, question in enumerate(questions):
-        config = {"configurable": {"thread_id": "customer-1" if one_thread else f"customer-{i}"}}
+        config = {"configurable": {"thread_id": "customer-1" if one_thread else f"one-question-{i}"}}
         before_question(question)
         steps = stream_steps(graph, make_input(question), config)
         runs.append({"question": question, "continues": one_thread and i > 0, "steps": steps})

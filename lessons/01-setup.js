@@ -11,7 +11,8 @@ LESSONS.push({
     <ul>
       <li><b>LangGraph</b> (from the LangChain team) is a runtime for <b>graphs</b>: you describe steps (nodes) and
       the paths between them (edges), and LangGraph runs them, passing a shared state from step to step. It does
-      not call LLMs by itself. The LLM calls usually come from LangChain chat models.</li>
+      not call LLMs by itself. In these examples the LLM calls come from LangChain chat models, but LangGraph does
+      not need LangChain: a node can call a provider SDK or a Pydantic AI agent just as well.</li>
       <li><b>Pydantic AI</b> (from the Pydantic team) is about the <b>LLM call</b> itself: an <code>Agent</code> sends
       a prompt, can call your Python functions as tools, and gives back a typed result. The flow between steps is
       your own Python code.</li>
@@ -52,8 +53,9 @@ LESSONS.push({
   ],
   differ: `
     <p><b>LangGraph is not an LLM library.</b> A LangGraph node can be any Python function: it may call an LLM, a
-    database, or nothing at all. That is why LangGraph needs a second library (LangChain) for the model, and why
-    lesson 7 can swap LangChain for Pydantic AI inside the same graph.</p>
+    database, or nothing at all. So you bring the model from somewhere else. Here that is LangChain, because its
+    chat models plug into <code>ToolNode</code> and the message state, but it is a choice, not a requirement:
+    lesson 7 swaps LangChain for Pydantic AI inside the same graph.</p>
     <p><b>Read the prefix carefully.</b> An early version of these examples used
     <code>"openai:anthropic/claude-sonnet-5.5"</code>: the OpenAI client pointed at the OpenRouter URL. It worked,
     because OpenRouter speaks the OpenAI API, but it reads like nonsense. With the
