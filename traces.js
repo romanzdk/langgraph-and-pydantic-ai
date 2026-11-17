@@ -847,6 +847,149 @@ window.TRACES = {
    ]
   }
  ],
+ "crash": [
+  {
+   "question": "Order 123 arrived broken. Please refund it.",
+   "continues": false,
+   "steps": [
+    {
+     "node": "(input)",
+     "changed": [],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       }
+      ]
+     }
+    },
+    {
+     "node": "draft_reply",
+     "changed": [
+      "messages"
+     ],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       },
+       {
+        "role": "ai",
+        "text": "",
+        "tool_calls": [
+         "issue_refund(order_id='123')"
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "node": "(crashed)",
+     "changed": [],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       },
+       {
+        "role": "ai",
+        "text": "",
+        "tool_calls": [
+         "issue_refund(order_id='123')"
+        ]
+       }
+      ]
+     },
+     "paid": {
+      "123": "refund-1"
+     }
+    }
+   ]
+  },
+  {
+   "question": "invoke(None, config) in a new process",
+   "continues": true,
+   "restart": true,
+   "steps": [
+    {
+     "node": "(input)",
+     "changed": [],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       },
+       {
+        "role": "ai",
+        "text": "",
+        "tool_calls": [
+         "issue_refund(order_id='123')"
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "node": "tools",
+     "changed": [
+      "messages"
+     ],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       },
+       {
+        "role": "ai",
+        "text": "",
+        "tool_calls": [
+         "issue_refund(order_id='123')"
+        ]
+       },
+       {
+        "role": "tool",
+        "text": "order 123 was already refunded (refund-1)"
+       }
+      ]
+     }
+    },
+    {
+     "node": "draft_reply",
+     "changed": [
+      "messages"
+     ],
+     "state": {
+      "messages": [
+       {
+        "role": "human",
+        "text": "Order 123 arrived broken. Please refund it."
+       },
+       {
+        "role": "ai",
+        "text": "",
+        "tool_calls": [
+         "issue_refund(order_id='123')"
+        ]
+       },
+       {
+        "role": "tool",
+        "text": "order 123 was already refunded (refund-1)"
+       },
+       {
+        "role": "ai",
+        "text": "Order 123 is refunded. Sorry it arrived broken!"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ ],
  "combined": [
   {
    "question": "Where is my order 123?",

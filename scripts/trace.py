@@ -17,14 +17,17 @@ sys.path.insert(0, str(ROOT / "examples"))
 os.environ.setdefault("OPENROUTER_API_KEY", "fake")
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage  # noqa: E402
+from langgraph.checkpoint.sqlite import SqliteSaver  # noqa: E402
 from langgraph.types import Command  # noqa: E402
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart  # noqa: E402
 from pydantic_ai.models.function import AgentInfo, FunctionModel  # noqa: E402
 
 import combined_pipeline as cb  # noqa: E402
+import failures_langgraph as fl  # noqa: E402
 import hitl_langgraph as hl  # noqa: E402
 import langgraph_pipeline as lg  # noqa: E402
-from check_offline import FakeLLM  # noqa: E402
+import shop  # noqa: E402
+from check_offline import Crash, CrashAfterPayout, FakeLLM  # noqa: E402
 
 QUESTIONS = ["Where is my order 123?", "And what about 456?", "Production is down, nobody can log in!"]
 REPLIES = {
@@ -70,7 +73,11 @@ def record(graph, make_input, questions: list[str], one_thread: bool) -> list[di
 
 
 def stream_steps(graph, graph_input, config) -> list[dict]:
-    steps, node, changed, paused = [], "(input)", [], None
+    return list(iter_steps(graph, graph_input, config))
+
+
+def iter_steps(graph, graph_input, config):
+    node, changed, paused = "(input)", [], None
     for mode, chunk in graph.stream(graph_input, config, stream_mode=["updates", "values"]):
         if mode == "updates":
             [(node, update)] = chunk.items()
@@ -82,8 +89,7 @@ def stream_steps(graph, graph_input, config) -> list[dict]:
             step = {"node": node, "changed": changed, "state": {k: show(v) for k, v in chunk.items() if k != "__interrupt__"}}
             if paused:
                 step["interrupt"] = paused
-            steps.append(step)
-    return steps
+            yield step
 
 
 def record_human_in_the_loop() -> list[dict]:
@@ -100,6 +106,35 @@ def record_human_in_the_loop() -> list[dict]:
     return [
         {"question": question, "continues": False, "steps": stream_steps(hl.graph, lg_input(question), config)},
         {"question": "Command(resume=True)", "continues": True, "resume": True, "steps": stream_steps(hl.graph, Command(resume=True), config)},
+    ]
+
+
+def record_crash() -> list[dict]:
+    """The process dies inside the tools step, right after the payout. Then a new process resumes."""
+    lg.llm = FakeLLM(
+        ticket=lg.Ticket(category="billing", urgent=False),
+        messages=iter([
+            AIMessage("", tool_calls=[{"name": "issue_refund", "args": {"order_id": "123"}, "id": "call_refund"}]),
+            AIMessage("Order 123 is refunded. Sorry it arrived broken!"),
+        ]),
+    )
+    config = {"configurable": {"thread_id": "customer-1"}}
+    question = "Order 123 arrived broken. Please refund it."
+    shop.REFUNDS = CrashAfterPayout()
+    with SqliteSaver.from_conn_string(":memory:") as checkpointer:
+        graph = fl.builder.compile(checkpointer=checkpointer)
+        steps = []
+        try:
+            steps.extend(iter_steps(graph, lg_input(question), config))
+        except Crash:
+            saved = graph.get_state(config)
+            steps.append({"node": "(crashed)", "changed": [], "state": {k: show(v) for k, v in saved.values.items()}, "paid": dict(shop.REFUNDS)})
+        shop.REFUNDS = dict(shop.REFUNDS)
+        resumed = stream_steps(graph, None, config)
+    shop.REFUNDS.clear()
+    return [
+        {"question": question, "continues": False, "steps": steps},
+        {"question": "invoke(None, config) in a new process", "continues": True, "restart": True, "steps": resumed},
     ]
 
 
@@ -133,6 +168,7 @@ traces["langgraph_single"] = record(lg.graph, lg_input, [QUESTIONS[0], QUESTIONS
 lg.llm = FakeLLM(ticket=lg.Ticket(category="question", urgent=False), messages=lg_messages())
 traces["langgraph"] = record(lg.graph, lg_input, QUESTIONS, one_thread=True)
 traces["hitl"] = record_human_in_the_loop()
+traces["crash"] = record_crash()
 with cb.classifier.override(model=FunctionModel(fake_agent_model)), cb.writer.override(model=FunctionModel(fake_agent_model)):
     traces["combined"] = record(cb.graph, lambda q: {"text": q}, QUESTIONS, one_thread=True)
 

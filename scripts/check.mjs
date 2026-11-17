@@ -23,11 +23,18 @@ const ids = new Set();
 
 for (const lesson of ctx.LESSONS) {
   const where = (s) => `${lesson.id}: ${s}`;
-  for (const key of ['id', 'title', 'summary', 'intro', 'examples']) if (!lesson[key]) errors.push(where(`missing ${key}`));
+  for (const key of ['id', 'title', 'summary', 'intro']) if (!lesson[key]) errors.push(where(`missing ${key}`));
+  if (!lesson.examples?.length && !lesson.differ) errors.push(where('needs examples or a differ section'));
+  for (const ex of lesson.exercises || []) {
+    for (const f of [`${ex.name}.py`, `solutions/${ex.name}.py`]) {
+      if (!fs.existsSync(path.join(root, 'exercises', f))) errors.push(where(`exercise ${ex.name}: no exercises/${f}`));
+    }
+    if (!ex.title || !ex.text) errors.push(where(`exercise ${ex.name}: needs a title and a text`));
+  }
   if (ids.has(lesson.id)) errors.push(where('duplicate id'));
   ids.add(lesson.id);
 
-  lesson.examples.forEach((ex, ei) => {
+  (lesson.examples || []).forEach((ex, ei) => {
     const kinds = PANES.filter((k) => ex[k] !== undefined);
     if (!kinds.length) errors.push(where(`example ${ei} has no code`));
     for (const k of kinds.filter((k) => CODE_PANES.includes(k))) {

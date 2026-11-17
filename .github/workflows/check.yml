@@ -12,6 +12,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - name: Run all examples with fake models
         run: cd examples && uv run check_offline.py
+      - name: Exercise solutions pass, exercises still need solving
+        run: uv run exercises/check.py --solutions
       - name: Stepper traces are up to date
         run: uv run scripts/trace.py && git diff --exit-code traces.js
       - name: Lessons match the examples

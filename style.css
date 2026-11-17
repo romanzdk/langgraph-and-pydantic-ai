@@ -195,6 +195,9 @@ pre.code code { background: none; padding: 0; font-size: inherit; display: block
 
 .differ { margin-top: 2.2em; padding: 4px 22px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--pa); }
 .differ h2 { margin-top: 0.8em; }
+.exercise { margin-top: 2.2em; padding: 4px 22px 18px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); }
+.exercise h2 { margin-top: 0.8em; }
+.exercise-links { margin-bottom: 0; color: var(--muted); }
 
 /* Stepper */
 .stepper { margin-top: 2.2em; padding: 4px 22px 20px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--lg); }
@@ -259,6 +262,6 @@ pre.code code { background: none; padding: 0; font-size: inherit; display: block
   .panes-2 { grid-template-columns: minmax(0, 1fr); }
   h1 { font-size: 1.6rem; }
   .row { grid-template-columns: minmax(0, 1fr); }
-  .stepper, .differ { padding-left: 14px; padding-right: 14px; }
+  .stepper, .differ, .exercise { padding-left: 14px; padding-right: 14px; }
   pre.code { font-size: 12.5px; }
 }
