@@ -392,7 +392,7 @@ function renderLesson(lesson) {
 }
 
 function route() {
-  const id = location.hash.replace(/^#\//, '');
+  const id = location.hash.replace(/^#\//, '') || document.body.dataset.page || '';
   const lesson = LESSONS.find((l) => l.id === id);
   if (lesson) renderLesson(lesson);
   else if (id === 'cheatsheet') renderCheatsheet();
