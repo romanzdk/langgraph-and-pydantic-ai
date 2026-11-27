@@ -169,6 +169,7 @@ It is a static site with no build step:
 ```sh
 python3 -m http.server 8000   # then open http://localhost:8000
 node scripts/check.mjs        # check the lessons
+node scripts/build-pages.mjs  # build the deployed site into _site/ (a page per lesson + sitemap)
 ```
 
 ## Contributing
