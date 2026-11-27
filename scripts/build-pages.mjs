@@ -18,7 +18,7 @@ for (const [, src] of html.matchAll(/<script src="((?:lib|traces|lessons\/)[^"]*
 const { LESSONS } = ctx;
 
 fs.rmSync(out, { recursive: true, force: true });
-for (const f of ['index.html', 'style.css', 'app.js', 'lib.js', 'traces.js', 'lessons', 'docs/images']) {
+for (const f of ['index.html', 'style.css', 'app.js', 'lib.js', 'traces.js', 'lessons', 'docs/images', 'google63d07f5be656bfba.html']) {
   fs.cpSync(path.join(root, f), path.join(out, f), { recursive: true });
 }
 
