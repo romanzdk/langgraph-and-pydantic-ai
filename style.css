@@ -151,7 +151,9 @@ h3 { font-size: 1.1rem; margin: 2em 0 0.4em; }
 #nav .tick { color: var(--right); margin-left: auto; }
 
 main { grid-area: main; padding: 28px 40px 60px; max-width: 1180px; width: 100%; }
-.site-foot { grid-area: foot; padding: 20px 40px; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--border); }
+.site-foot { grid-area: foot; padding: 20px 40px; color: var(--muted); font-size: 0.9rem; line-height: 1.8; border-top: 1px solid var(--border); }
+/* WCAG 2.2 target size: 24px tall links; line-height keeps padded links on wrapped lines from overlapping. */
+.site-foot a { padding-block: 4px; }
 
 /* Home */
 .lead { font-size: 1.15rem; color: var(--muted); max-width: 46em; }
